@@ -22,7 +22,7 @@ def randomY(amt):
     return np.array([randomY(1) for _ in range(amt)])
 
 def genDataset(amt):
-    return (randomX(amt), randomY(amt))
+    return randomX(amt), randomY(amt)
 
 X, y = genDataset(400)
 

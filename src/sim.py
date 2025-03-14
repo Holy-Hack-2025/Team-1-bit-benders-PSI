@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 from typing import Tuple, List
 from random import random, shuffle, normalvariate as normal, randint
+from pprint import pprint
+
+import numpy as np
 
 from structures import *
 
@@ -31,16 +34,23 @@ class Process:
                 # reset time counter
                 self.timeLeft = self.time
                 # update item state to next type
-                if self.targetType is not None: self.queue[0].type = self.targetType
+                if self.targetType is not None:
+                    self.queue[0].type = self.targetType
+                    self.queue[0].quality += normal(0, 0.1)
+                    self.queue[0].deviation += normal(0, 0.1)
+                    self.queue[0].hardness += normal(0, 0.1)
+
+
+
                 # remove item and update priority queue
                 out = self.queue.pop(0)
                 self.queue.sort(key=lambda i: i.priority)
                 return out
 
     def __call__(self, item: Item) -> None:
-        if(self.allowedInputs is not None and item.type not in self.allowedInputs):
+        if self.allowedInputs is not None and item.type not in self.allowedInputs:
             raise TypeError(f"Process Cannot Proceed on This Type ({item.type} not in {self.allowedInputs}).")
-        if(self.allowedMetals is not None and item.metal not in self.allowedMetals):
+        if self.allowedMetals is not None and item.metal not in self.allowedMetals:
             raise TypeError(f"Process Cannot Proceed on This Metal ({item.metal} not in {self.allowedMetals}).")
         self.queue.append(item)
     
@@ -57,6 +67,15 @@ machine_chassis = Process(6, 7, [ItemType.SHEET], [MetalType.TIN, MetalType.STEE
 # scrap = proc 8
 
 processes = [shape_block, shape_rod, shape_sheet, machine_screw, machine_spring, machine_washer, machine_chassis]
+processNames = ["shape_block",
+                "shape_rod",
+                "shape_sheet",
+                "machine_screw",
+                "machine_spring",
+                "machine_washer",
+                "machine_chassis",
+                "sell",
+                "scrap"]
 
 def can_make(i: Item, o: Item) -> bool:
     if i.metal != o.metal: return False
@@ -88,18 +107,21 @@ def heuristic_decision(inputState: InputState) -> Decision:
             return Decision(7)
     
     for order in orders:
-        for p in processes:
-            if item.type in p.allowedInputs and item.metal in p.allowedMetals:
+        for p in shuffled(processes):
+            if (p.allowedInputs is None or item.type in p.allowedInputs) and (p.allowedMetals is None or item.metal in p.allowedMetals):
+                return Decision(p.id)
+
+    return Decision(8)
     
 
-def generate_dataset(size: int) -> List[Tuple[InputState, Decision]]:
+def generate_dataset(iterations: int) -> List[Tuple[InputState, Decision]]:
     orders: List[Order] = []
     items: List[Item] = []
     scrapped: List[Item] = []
 
     dataset: List[Tuple[InputState, Decision]] = []
 
-    for _ in range(size):
+    for _ in range(iterations):
         # add new order randomly
         if random() > 0.8:
             item = Item(
@@ -159,4 +181,38 @@ def generate_dataset(size: int) -> List[Tuple[InputState, Decision]]:
     return dataset
 
 
-generate_dataset(3)
+
+def human_dataset(dataset: List[Tuple[InputState, Decision]]) -> List[Tuple[InputState, Tuple[Decision, str]]]:
+    ret = []
+
+    for ds in dataset:
+        ret.append((ds[0], (ds[1], processNames[ds[1].proc])))
+
+    return ret
+
+def print_dataset(dataset: List[Tuple[InputState, Decision]]):
+    for ds in human_dataset(dataset):
+        print("Input: ", end="")
+        pprint(ds[0])
+
+        print("=> ", end="")
+        pprint(ds[1])
+
+    print("\n□", dataset_stats(dataset))
+
+
+def dataset_stats(dataset: List[Tuple[InputState, Decision]]):
+    l = [d[1][1] for d in human_dataset(dataset)]
+    d = dict.fromkeys(l, 0)
+    for val in l:
+        d[val] += 1
+    return d
+
+
+def generate_data_files(iterations = 30):
+    dataset = generate_dataset(iterations)
+    np.savez("./data/in", np.array([d[0].data() for d in dataset]))
+    np.savez("./data/out", np.array([d[1].data() for d in dataset]))
+
+
+generate_data_files()
