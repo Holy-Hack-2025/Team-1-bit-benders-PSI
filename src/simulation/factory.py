@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from src.data.format.types import *
 
-
 @dataclass
 class Process(Vectorable):
     input: Item
