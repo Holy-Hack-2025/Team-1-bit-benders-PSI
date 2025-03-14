@@ -1,13 +1,16 @@
 from dataclasses import dataclass
 
 from data.format.items import Vectorable
-from data.format.factory import Process
-
 
 @dataclass
 class Result(Vectorable):
-    proc: Process
+    proc: int
+
+    def data(self):
+        v = [0] * 20
+        v[self.proc] = 1
+        return v
 
     @staticmethod
     def parse(data):
-        return Result(Process.parse(data))
+        return Result(list(data).index(1))
