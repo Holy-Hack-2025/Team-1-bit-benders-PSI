@@ -4,14 +4,13 @@ from typing import List
 import numpy as np
 
 class Vectorable:
-    def data(self):
-        values = self.__dict__
-        keys = list(values.keys())
-        v = list(np.zeros(len(keys)))
-        for i in range(len(keys)):
-            v[i] = values[keys[i]].data() if isinstance(values[keys[i]], Vectorable) else values[keys[i]]
-        return v
+    def data(self) -> np.ndarray:
+        return np.array(self._data_list())
 
+    def _data_list(self) -> List:
+        values = self.__dict__
+        return sum([values[key]._data_list() if isinstance(values[key, Vectorable]) else values[key] for key in values])
+        
 
 class EnumVec(Vectorable, Enum):
     def data(self):
