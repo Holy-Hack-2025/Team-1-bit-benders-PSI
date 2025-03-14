@@ -1,3 +1,4 @@
+import time
 from dataclasses import dataclass
 from typing import Tuple, List
 from random import random, shuffle, normalvariate as normal, randint
@@ -121,7 +122,10 @@ def generate_dataset(iterations: int) -> List[Tuple[InputState, Decision]]:
 
     dataset: List[Tuple[InputState, Decision]] = []
 
+    init_time = time.time()
+
     for _ in range(iterations):
+        if _ % 1000 == 0: print(_, time.time() - init_time)
         # add new order randomly
         if random() > 0.8:
             item = Item(
@@ -209,10 +213,11 @@ def dataset_stats(dataset: List[Tuple[InputState, Decision]]):
     return d
 
 
-def generate_data_files(iterations = 30):
-    dataset = generate_dataset(iterations)
-    np.savez("./data/in", np.array([d[0].data() for d in dataset]))
-    np.savez("./data/out", np.array([d[1].data() for d in dataset]))
+def generate_data_files(iterations = 25_000, folds = 10):
+    for fold in range(folds):
+        dataset = generate_dataset(iterations)
+        np.save(f"./data/in_{fold}", np.array([d[0].data() for d in dataset]))
+        np.save(f"./data/out_{fold}", np.array([d[1].data() for d in dataset]))
 
 
 generate_data_files()
