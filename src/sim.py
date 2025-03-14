@@ -79,14 +79,17 @@ def item_matches(item: Item, req: Item) -> bool:
 def heuristic_decision(inputState: InputState) -> Decision:
     item = inputState.item
     orders = inputState.requirements.items
+    orders = sorted(orders, key=lambda o: o.item.priority)
 
     if item.deviation > .9 or item.quality < .2: return Decision(8) # scrap
     
-    for order in sorted(orders, key=lambda o: o.item.priority):
+    for order in orders:
         if item_matches(item, order.item):
             return Decision(7)
     
-    
+    for order in orders:
+        for p in processes:
+            if item.type in p.allowedInputs and item.metal in p.allowedMetals:
     
 
 def generate_dataset(size: int) -> List[Tuple[InputState, Decision]]:
@@ -99,7 +102,6 @@ def generate_dataset(size: int) -> List[Tuple[InputState, Decision]]:
     for _ in range(size):
         # add new order randomly
         if random() > 0.8:
-
             item = Item(
                 shuffled(list(MetalType))[0],
                 shuffled(list(ItemType))[0],
