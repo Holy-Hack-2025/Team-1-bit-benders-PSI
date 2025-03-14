@@ -24,14 +24,19 @@ def randomY(amt):
 def genDataset(amt):
     return randomX(amt), randomY(amt)
 
-X, y = genDataset(400)
+def loadDataset():
+    return np.load('./data/in.npy'), np.load('./data/out.npy')
+
+X, y = loadDataset()
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=True)
 
 clf = tree.DecisionTreeClassifier(max_depth=10)
 
-clf = clf.fit(X, y)
+clf = clf.fit(X_train, y_train)
 
-print(X[0], y[0])
-
-print(clf.predict(X[0].reshape((1, -1))))
+y_pred = clf.predict(X_test)
+acc = 0
+for y_predi, y_testi in zip(y_pred, y_test):
+    acc += 1 if y_predi == y_testi else 0
+print(acc/len(y_pred))

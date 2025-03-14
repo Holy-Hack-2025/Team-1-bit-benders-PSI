@@ -132,9 +132,7 @@ class Decision(Vectorable):
     proc: int
 
     def data(self):
-        v = [0] * 20
-        v[self.proc] = 1
-        return v
+        return self.proc
 
     @staticmethod
     def parse(data: np.ndarray):
