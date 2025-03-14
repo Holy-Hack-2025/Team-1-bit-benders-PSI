@@ -1,6 +1,6 @@
 from sklearn import tree
 from sklearn.model_selection import train_test_split
-from data.format.types import *
+from structures import *
 
 def randomX(amt):
     if amt == 1:

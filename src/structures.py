@@ -49,11 +49,14 @@ class MetalType(EnumVec):
         return MetalType(list(data).index(1))
 
 class ItemType(EnumVec):
-    SCREW = 0
-    SPRING = 1
-    WASHER = 2
-    PIN = 3
-    CHASSIS = 4
+    RAW = 0
+    SHEET = 1
+    BLOCK = 2
+    ROD = 3
+    SCREW = 4
+    SPRING = 5
+    WASHER = 6
+    CHASSIS = 7
 
     @staticmethod
     def parse(data: np.ndarray):
@@ -105,7 +108,13 @@ class Requirements(Vectorable):
         for i in range(0, len(data), size):
             split.append(data[i:i + size])
 
-        return Requirements([Order.parse(d) for d in split])
+        return Requirements(tuple(Order.parse(d) for d in split))
+    
+    @staticmethod
+    def from_list(orders: List[Order]):
+        orders = sorted(orders, key=lambda o: o.item.priority)
+        if len(orders) < 5: orders += [Order(Item(MetalType.IRON, ItemType.BLOCK, 0, 0, 0, 0), 0)] * ( 5 - len(orders) )
+        return Requirements(tuple(orders[:5]))
 
 @dataclass
 class InputState(Vectorable):
