@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-
-from data.format.items import Vectorable, Item, MetalType, ItemType
+from src.data.format.types import *
 
 
 @dataclass

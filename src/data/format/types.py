@@ -1,6 +1,6 @@
 from enum import Enum
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple, get_origin
 import numpy as np
 
 class Vectorable:
@@ -13,13 +13,25 @@ class Vectorable:
 
         if isinstance(data, list):
             return sum([self.__convert(d) for d in data], [])
+        
+        if isinstance(data, tuple):
+            return sum([self.__convert(d) for d in data], [])
 
         return [data]
 
     def _data_list(self) -> List:
         values = self.__dict__
         return sum([self.__convert(values[key]) for key in values], [])
-        
+    
+def len_data(vectorable: Vectorable) -> int:
+    fields = vectorable.__annotations__
+    return sum([ \
+                sum([len_data(item) for item in field.__args__]) if get_origin(field) is tuple \
+                    else len(field) if issubclass(field, Enum) \
+                    else len_data(field) if issubclass(field, Vectorable) \
+                    else 1 \
+                    for field in fields.values()] \
+            )
 
 class EnumVec(Vectorable, Enum):
     def _data_list(self):
@@ -27,14 +39,13 @@ class EnumVec(Vectorable, Enum):
         v[self.value] = 1
         return v
 
-
 class MetalType(EnumVec):
     TIN = 0
     STEEL = 1
     IRON = 2
 
     @staticmethod
-    def parse(data):
+    def parse(data: np.ndarray):
         return MetalType(list(data).index(1))
 
 class ItemType(EnumVec):
@@ -45,32 +56,8 @@ class ItemType(EnumVec):
     CHASSIS = 4
 
     @staticmethod
-    def parse(data):
+    def parse(data: np.ndarray):
         return ItemType(list(data).index(1))
-
-class ItemField(EnumVec):
-    METAL = 0
-    TYPE = 1
-    PURITY = 2
-    HARDNESS = 3
-    COEF_THERMALEXPANSION = 4
-    PRIORITY = 5
-    DEVIATION = 6
-    QUALITY = 7
-
-    @staticmethod
-    def parse(data):
-        return ItemField(list(data).index(1))
-
-class ConstraintType(EnumVec):
-    MIN = 0
-    MAX = 1
-    WHITHIN = 2
-    EQ = 3
-
-    @staticmethod
-    def parse(data):
-        return ConstraintType(list(data).index(1))
 
 @dataclass
 class Item(Vectorable):
@@ -84,9 +71,8 @@ class Item(Vectorable):
     deviation: float = 0
     quality: float = 1
 
-
     @staticmethod
-    def parse(data):
+    def parse(data: np.ndarray):
         return Item(MetalType.parse(data[[i for i in range(len(MetalType))]]),
                     ItemType.parse(data[[i + len(MetalType) for i in range(len(ItemType))]]),
                     data[len(MetalType) + len(ItemType)],
@@ -99,14 +85,49 @@ class Item(Vectorable):
 
 @dataclass
 class Order(Vectorable):
-    items: List[Item]
+    item: Item
+    amount: int
 
     @staticmethod
-    def parse(data):
-        size = len(Item(MetalType.IRON, ItemType.CHASSIS, 0, 0, 0, 0).data())
+    def parse(data: np.ndarray):
+        return Order(Item.parse(data[:-1]), int(data[-1]))
+
+
+@dataclass
+class Requirements(Vectorable):
+    items: Tuple[Order, Order, Order, Order, Order]
+
+    @staticmethod
+    def parse(data: np.ndarray):
+        size = len_data(Order)
 
         split = []
         for i in range(0, len(data), size):
             split.append(data[i:i + size])
 
-        return Order([Item.parse(d) for d in split])
+        return Requirements([Order.parse(d) for d in split])
+
+@dataclass
+class InputState(Vectorable):
+    item: Item
+    requirements: Requirements
+
+    @staticmethod
+    def parse(data: np.ndarray):
+        itemlen = len_data(Item)
+        return InputState(Item.parse(data[:itemlen]), Requirements.parse(data[itemlen:]))
+
+
+@dataclass
+class Decision(Vectorable):
+    proc: int
+
+    def data(self):
+        v = [0] * 20
+        v[self.proc] = 1
+        return v
+
+    @staticmethod
+    def parse(data: np.ndarray):
+        return Decision(list(data).index(1))
+    
