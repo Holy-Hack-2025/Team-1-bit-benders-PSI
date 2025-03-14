@@ -9,7 +9,7 @@ class Vectorable:
 
     def _data_list(self) -> List:
         values = self.__dict__
-        return sum([values[key]._data_list() if isinstance(values[key, Vectorable]) else values[key] for key in values])
+        return sum([values[key]._data_list() if isinstance(values[key, Vectorable]) else values[key] for key in values], [])
         
 
 class EnumVec(Vectorable, Enum):
