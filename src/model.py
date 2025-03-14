@@ -1,4 +1,5 @@
 from sklearn import tree
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from structures import *
 
@@ -25,18 +26,36 @@ def genDataset(amt):
     return randomX(amt), randomY(amt)
 
 def loadDataset():
-    return np.load('./data/in.npy'), np.load('./data/out.npy')
+    inp = np.load('./data/in_0.npy')
+    out = np.load('./data/out_0.npy')
+    # for i in range(1, 10):
+    #     inp = np.concatenate( (inp, np.load(f'./data/in_{i}.npy')) )
+    #     out = np.concatenate( (out, np.load(f'./data/out_{i}.npy')) )
+
+    print(f'Dataset Loaded ({inp.shape[0]} examples)')
+    return inp, out
 
 X, y = loadDataset()
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=True)
 
-clf = tree.DecisionTreeClassifier(max_depth=10)
+clf = tree.DecisionTreeClassifier(max_depth=200)
 
 clf = clf.fit(X_train, y_train)
 
-y_pred = clf.predict(X_test)
+y_pred = clf.predict(X_train)
+preddist = np.zeros((9,))
 acc = 0
-for y_predi, y_testi in zip(y_pred, y_test):
-    acc += 1 if y_predi == y_testi else 0
-print(acc/len(y_pred))
+successes = []
+for X_testi, y_predi, y_testi in zip(X_test, y_pred, y_train):
+    if y_predi == y_testi:
+        successes += [(X_testi, y_predi)]
+    preddist[y_predi] += 1
+
+print("Distribution of outputs:", preddist/len(y_pred))
+print("Accuracy on Test Set:", len(successes)/len(y_pred))
+
+for success in successes[:10]:
+    nodeind = clf.decision_path(success[0])
+    print(nodeind) # u can remove this
+    # maxim comes in here

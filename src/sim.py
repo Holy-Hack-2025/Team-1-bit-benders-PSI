@@ -127,7 +127,7 @@ def generate_dataset(iterations: int) -> List[Tuple[InputState, Decision]]:
     for _ in range(iterations):
         if _ % 1000 == 0: print(_, time.time() - init_time)
         # add new order randomly
-        if random() > 0.8:
+        if random() > 0.8 and len(orders) < 6:
             item = Item(
                 shuffled(list(MetalType))[0],
                 shuffled(list(ItemType))[0],
@@ -144,7 +144,7 @@ def generate_dataset(iterations: int) -> List[Tuple[InputState, Decision]]:
             orders += [Order(item, amt)]
 
         # add new item randomly
-        if random() > 0.5:
+        if random() > 0.5 and len(items) < 10:
             item = Item(
                 shuffled(list(MetalType))[0],
                 ItemType.RAW,
@@ -169,6 +169,7 @@ def generate_dataset(iterations: int) -> List[Tuple[InputState, Decision]]:
                 for order in orders:
                     if item_matches(item, order.item):
                         order.amount -= 1
+                        if order.amount == 0: orders.remove(order)
                         break
             elif decision.proc == 8:
                 scrapped += [item]
@@ -213,7 +214,7 @@ def dataset_stats(dataset: List[Tuple[InputState, Decision]]):
     return d
 
 
-def generate_data_files(iterations = 25_000, folds = 10):
+def generate_data_files(iterations = 100_000, folds = 1):
     for fold in range(folds):
         dataset = generate_dataset(iterations)
         np.save(f"./data/in_{fold}", np.array([d[0].data() for d in dataset]))
